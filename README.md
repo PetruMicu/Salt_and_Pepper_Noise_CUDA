@@ -1,13 +1,21 @@
 # Salt and Pepper Noise Filtering Using CUDA
 
-#### Petru Micu
-#### ACES
-#### 
+#### Author: Petru Micu
+#### Master's Program: ACES
+#### Github: https://github.com/PetruMicu/Salt_and_Pepper_Noise_CUDA
 
 ## Table of Contents
 - [Introduction](#introduction)
 - [Theoretical Approach](#theoretical-approach)
+    - [Median Filtering](#median-filtering)
+    - [CUDA Programming Model](#cuda-programming-model)
+        - [Kernel](#kernel)
+        - [Blocks and Threads](#blocks-and-threads)
+        - [Shared Memory](#shared-memory)
+        - [Advantages of Using CUDA](#advantages-of-using-cuda)
+    - [OpenCV (Open Source Computer Vision Library)](#opencv-open-source-computer-vision-library-)
 - [Implementation](#implementation)
+- [Hardware](#hardware)
 - [Performance](#performance)
 - [Conclusion](#conclusion)
 
@@ -57,13 +65,84 @@ especially when dealing with large images.
 
 ### CUDA Programming Model
 
-CUDA (Compute Unified Device Architecture) is a parallel computing platform developed by NVIDIA that allows the use of GPUs for general-purpose computing. In this project, I exploit the parallelism of the GPU to apply the median filter in parallel on each pixel of the image.
+CUDA (Compute Unified Device Architecture) is a parallel computing platform developed by NVIDIA that allows the use of 
+GPUs for general-purpose computing. It provides a powerful framework for executing computations on the GPU, which is 
+optimized for parallelism. In this project, the goal is to exploit the parallelism of the GPU to apply the median filter 
+in parallel on each pixel of the image.
 
+#### Key Components of the CUDA Model
+
+CUDA programs are organized around a few key concepts that work together to enable efficient parallel computing. 
+Below are the key components used in the implementation of the median filter on the GPU:
+
+#### Kernel
+
+A **kernel** is a function that is executed on the GPU. It contains the instructions that each thread will execute. 
+In the case of image processing, the kernel processes one pixel at a time, applying the filter algorithm. When the 
+kernel is launched, each thread will work on a single pixel and process the data in parallel across the image.
+
+- **Kernel Execution**: The kernel is executed by a large number of threads simultaneously.
+- **Thread Indexing**: Each thread is responsible for processing one pixel, identified by its thread index.
+
+#### Blocks and Threads
+
+The CUDA programming model organizes threads into a grid of blocks. Each block contains multiple threads, and the 
+threads within a block can communicate with each other via shared memory.
+
+- **Blocks**: A block is a group of threads that execute the same kernel. Blocks can be organized in one, two, or 
+three-dimensional structures.
+- **Threads**: Threads within a block are executed simultaneously. Each thread processes a separate piece of data—in 
+this case, a single pixel of the image.
+
+In the context of image processing:
+- Each **thread** applies the median filter to one pixel of the image.
+- The **block** contains multiple threads, allowing the image to be divided into manageable chunks for parallel processing.
+
+#### Shared Memory
+
+**Shared memory** is a small, fast memory space that is shared among threads within the same block. It is much faster 
+than global memory, and it is used to store temporary data that is accessed frequently by threads. In the case of the 
+median filter, shared memory stores the neighborhood of pixels around the pixel being processed.
+
+- **Usage in Median Filter**: Threads in a block load their pixel's neighbors into shared memory. Once the data is 
+loaded, each thread can calculate the median by accessing the shared memory, ensuring faster access than reading 
+from global memory.
+- **Optimization**: By using shared memory, the number of slow global memory accesses is minimized, which significantly
+improves performance.
+
+#### Advantages of Using CUDA
+
+- **Parallelism**: CUDA enables fine-grained parallelism, allowing thousands of threads to process the image in parallel, 
+greatly speeding up the computation compared to serial CPU processing.
+- **Efficiency**: Shared memory optimizations reduce memory latency, and the use of high-throughput GPU cores accelerates computation.
+- **Scalability**: CUDA allows the program to scale with the number of available cores on the GPU, making it suitable for 
+handling large datasets like high-resolution images.
 
 Key components of the CUDA model used:
 - **Kernel**: A function that is executed on the GPU.
 - **Blocks and Threads**: The kernel is executed by many threads organized in blocks, where each thread processes one pixel of the image.
 - **Shared Memory**: A fast memory shared by threads within the same block, used here to store the pixel neighborhood for median calculation.
+
+### OpenCV (Open Source Computer Vision Library) 
+
+It is a popular open-source library used for real-time image processing and computer vision. It supports a wide range 
+of tasks such as image filtering, object detection, and video processing, with efficient GPU acceleration support via CUDA.
+
+Key Features:
+
+- **Image Processing**: Functions for tasks like filtering, resizing, and edge detection.
+- **Computer Vision**: Algorithms for object detection, face recognition, and tracking.
+- **GPU Support**: CUDA integration for accelerated processing.
+
+Usage in This Project:
+
+- **Image Loading**: OpenCV's `imread()` is used to load images and `imwrite()` to save the output.
+- **Image Conversion**: Converts images from BGR to RGBA format for compatibility with CUDA kernels.
+- **GPU Integration**: Uses `cuda::GpuMat` for transferring image data to the GPU.
+- **Displaying Results**: Displays images with `imshow()` for visual comparison.
+
+OpenCV simplifies tasks like image loading, conversion, and display, while CUDA handles the parallelized filtering process, 
+making it a powerful combination for image processing tasks.
 
 ---
 
@@ -235,6 +314,11 @@ GPU, and it is converted back to the BGR color space for display.
 
 Displaying the results: The original and filtered images are displayed using OpenCV's `imshow` function.
 
+---
+
+## Hardware
+![System and HW information](./hardware_neofetch.png)
+![GPU info](./gpu_info.png)
 ---
 
 ## Performance
